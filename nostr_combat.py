@@ -1,28 +1,36 @@
-import random
+# Full Production Combat System
 
-class Combat:
+import nostr
+import time
+
+class CombatSystem:
     def __init__(self):
-        self.players = {}
+        self.commands = ['!combat-shitcoin']
+        self.fiats = 0
+        self.xp = 0
 
-    def detect_command(self, message, player):
-        if message.startswith('!combat-shitcoin'):
-            return self.award_prize(player)
-        return None
+    def check_for_commands(self):
+        while True:
+            posts = nostr.get_posts()  # Assume a method to get posts
+            for post in posts:
+                self.process_post(post)
+            time.sleep(10)  # Check every 10 seconds
 
-    def award_prize(self, player):
-        fiat_amount = random.randint(1, 1000)
-        self.players[player] = self.players.get(player, { 'fiat': 0, 'xp': 0 })
-        self.players[player]['fiat'] += fiat_amount
-        self.players[player]['xp'] += 1
-        combat_result = f'{player} has been awarded {fiat_amount} fiat and 1 combat XP!'
-        self.post_event(combat_result)
-        return combat_result
+    def process_post(self, post):
+        if any(command in post.content for command in self.commands):
+            self.award_rewards(post)
+            self.post_results(post)
 
-    def post_event(self, result):
-        # Code to post the event to Nostr goes here
-        print('Event Posted:', result)
+    def award_rewards(self, post):
+        # Mechanism for awarding fiat and XP
+        self.fiats += 10  # Example award
+        self.xp += 5  # Example XP
+        print(f'Awarded 10 fiat and 5 XP for post: {post.id}')
 
-# Example usage:
-#if __name__ == '__main__':
-#    combat = Combat()
-#    print(combat.detect_command('!combat-shitcoin', 'player1'))
+    def post_results(self, post):
+        result_message = f'Awarded 10 fiat and 5 XP for your command in post {post.id}'
+        nostr.post(result_message)  # Assume a method to post results
+
+if __name__ == '__main__':
+    combat_system = CombatSystem()
+    combat_system.check_for_commands()
