@@ -1,36 +1,46 @@
 import time
-import random
 
-class BitcoinMining:
-    def __init__(self, cap=21000000):
-        self.total_mined = 0
-        self.cap = cap
-        self.block_reward = 50  # Starting block reward
-        self.blocks_mined = 0
+# Configuration
+BLOCK_REWARD = 50  # initial reward in BTC
+HALVING_INTERVAL = 210000  # blocks after which reward is halved
+MAX_BITCOINS = 21000000  # maximum Bitcoin that can ever exist
 
-    def mine_block(self, player_hashrate):
-        if self.total_mined < self.cap:
-            # Simulate mining
-            time.sleep(600)  # 10 minutes
-            self.blocks_mined += 1
-            self.total_mined += self.block_reward
-            self.distribute_rewards(player_hashrate)
-            self.check_halving()
+# Data storage
+miner_stats = {}
 
-    def distribute_rewards(self, player_hashrate):
-        # Placeholder for the example of calculating rewards based on hash rate
-        proportion = player_hashrate / sum(player_hashrates)
-        reward = self.block_reward * proportion
-        print(f'Reward distributed: {reward} BTC based on a hash rate of {player_hashrate}')
+# Function to calculate current block reward
+def get_current_block_reward(block_number):
+    halvings = block_number // HALVING_INTERVAL
+    reward = BLOCK_REWARD / (2 ** halvings)
+    return reward
 
-    def check_halving(self):
-        if self.blocks_mined % 210000 == 0:
-            self.block_reward /= 2
-            print(f'Block reward halved to: {self.block_reward} BTC')
+# Function to update miner stats
+def update_miner_stats(miner_id, hash_rate):
+    miner_stats[miner_id] = miner_stats.get(miner_id, {'hash_rate': 0, 'btc_mined': 0})
+    miner_stats[miner_id]['hash_rate'] += hash_rate
 
-# Example player hashrates
-player_hashrates = [random.randint(1, 100) for _ in range(5)]  
-# Example usage
-mining = BitcoinMining()  
-for hashrate in player_hashrates:
-    mining.mine_block(hashrate)
+# Function to distribute Bitcoin
+def distribute_bitcoin(block_number):
+    total_hash_rate = sum(stat['hash_rate'] for stat in miner_stats.values())
+    if total_hash_rate == 0:
+        return  # Avoid division by zero
+    block_reward = get_current_block_reward(block_number)
+    # Distribute reward proportional to hash rate
+    for miner_id, stats in miner_stats.items():
+        miner_share = (stats['hash_rate'] / total_hash_rate) * block_reward
+        stats['btc_mined'] += miner_share
+        # Ensure we don't exceed the total Bitcoin cap
+        if sum(stats['btc_mined'] for stats in miner_stats.values()) > MAX_BITCOINS:
+            raise ValueError("Total Bitcoin cap exceeded!")
+
+# Main mining loop
+block_number = 0
+while True:
+    # Assuming the hash rates are randomly generated for simulation
+    for miner_id in range(1, 6):
+        update_miner_stats(miner_id, hash_rate=random.randint(1, 100))
+
+    distribute_bitcoin(block_number)
+    print(f'Block {block_number} mined! Distribution complete.')
+    block_number += 1
+    time.sleep(600)  # Sleep for 10 minutes
